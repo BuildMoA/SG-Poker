@@ -1,0 +1,38 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - master
+
+env:
+  CI_REGISTRY: docker-registry.saramin.co.kr/iris
+  BUILD_TAG: ${{ github.repository_owner }}-${{ github.run_id }}
+  # WEBHOOK_URL:
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup JDK
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11'
+
+      - name: Gradle Build
+        run: ./gradlew clean assemble
+
+  build:
+    runs-on: ubuntu-latest
+    needs: compile
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Build Docker Image
+        run: docker build -t ${{ env.CI_REGISTRY }}:${{ env.BUILD_TAG }} .
+  push:
+    runs-on: ubuntu-latest
+    needs: build
